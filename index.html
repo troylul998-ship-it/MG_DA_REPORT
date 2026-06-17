@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>IAA Freq × eCPM × LTV 完整分析报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { color: #1a1a1a; text-align: center; font-size: 24px; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+        h2 { color: #333; border-left: 4px solid #4CAF50; padding-left: 12px; margin-top: 40px; font-size: 18px; }
+        h3 { color: #555; margin-top: 25px; font-size: 15px; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+        .chart-box { height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 12px; }
+        .summary { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin: 20px 0; }
+        .summary li { margin: 6px 0; line-height: 1.5; font-size: 14px; }
+        .tag { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 6px; }
+        .tag-red { background: #fce4ec; color: #c62828; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 四款游戏 IAA Freq/DAU × eCPM × LTV 完整分析</h1>
+    <p class="subtitle">用户范围：2025-12-18 ~ 2026-06-16 新注册用户 | 维度：产品 × 双端 × 广告类型 × LT7/30/60/90/120/180</p>
+
+    <div class="summary">
+        <h3>🔑 核心结论</h3>
+        <ul>
+            <li><span class="tag tag-red">P10</span>eCPM 衰减最严重(-58~60%)，频次已接近天花板(8.7次/天)</li>
+            <li><span class="tag">UNO2</span>eCPM 衰减最小(-18%)，广告策略最健康</li>
+            <li>RV eCPM 衰减幅度略大于 INT eCPM（-64% vs -62%）</li>
+            <li>iOS eCPM 约为 Android 2~3倍，仍有提频空间</li>
+            <li>LTV 在 LT60→LT120 出现拐点，长线广告效率恶化</li>
+        </ul>
+    </div>
+
+    <h2>1. 总eCPM 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ecpm_total_android"></div>
+        <div class="chart-box" id="ecpm_total_ios"></div>
+    </div>
+
+    <h2>2. RV eCPM 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ecpm_rv_android"></div>
+        <div class="chart-box" id="ecpm_rv_ios"></div>
+    </div>
+
+    <h2>3. INT eCPM 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ecpm_int_android"></div>
+        <div class="chart-box" id="ecpm_int_ios"></div>
+    </div>
+
+    <h2>4. Freq/DAU 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="freq_android"></div>
+        <div class="chart-box" id="freq_ios"></div>
+    </div>
+
+    <h2>5. 总IAA LTV 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ltv_total_android"></div>
+        <div class="chart-box" id="ltv_total_ios"></div>
+    </div>
+
+    <h2>6. RV LTV 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ltv_rv_android"></div>
+        <div class="chart-box" id="ltv_rv_ios"></div>
+    </div>
+
+    <h2>7. INT LTV 趋势（分产品 × 分双端）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="ltv_int_android"></div>
+        <div class="chart-box" id="ltv_int_ios"></div>
+    </div>
+
+    <h2>8. P10 广告类型对比（RV vs INT eCPM）</h2>
+    <div class="chart-grid">
+        <div class="chart-box" id="p10_rv_int_android"></div>
+        <div class="chart-box" id="p10_rv_int_ios"></div>
+    </div>
+</div>
+
+<script>
+const lt = ['LT7','LT30','LT60','LT90','LT120','LT180'];
+const colors = { UNO: '#5470c6', SKB: '#91cc75', P10: '#fac858', UNO2: '#ee6666' };
+
+const D = {
+  UNO: {
+    ANDROID: { ecpm:[5.029,3.562,3.075,3.212,3.405,3.619], rv_ecpm:[9.45,6.109,5.008,5.144,5.355,5.564], int_ecpm:[3.732,2.342,1.934,1.934,2.014,2.105], freq:[2.04,5.24,6.44,6.41,6.12,6.11], ltv:[0.0195,0.0667,0.0827,0.0816,0.076,0.0866], rv_ltv:[0.0083,0.037,0.05,0.052,0.0497,0.0583], int_ltv:[0.0112,0.0297,0.0327,0.0296,0.0262,0.0283] },
+    IOS: { ecpm:[15.059,9.356,7.986,8.251,8.932,9.807], rv_ecpm:[24.11,15.834,13.242,13.244,13.908,14.666], int_ecpm:[12.029,6.454,5.043,5.038,5.344,5.836], freq:[2.64,5.76,6.11,5.68,5.39,5.13], ltv:[0.0812,0.2287,0.2349,0.2089,0.1993,0.2203], rv_ltv:[0.0326,0.1197,0.1398,0.1313,0.13,0.1482], int_ltv:[0.0486,0.1089,0.0951,0.0776,0.0693,0.0722] }
+  },
+  SKB: {
+    ANDROID: { ecpm:[51.867,34.129,24.448,21.859,20.722,19.286], rv_ecpm:[87.752,45.627,31.734,26.553,24.137,21.842], int_ecpm:[37.558,24.272,17.176,15.526,15.104,14.095], freq:[1.92,5.15,5.85,5.78,5.49,5.46], ltv:[0.2369,1.0818,1.1091,0.9808,0.8449,0.9155], rv_ltv:[0.1092,0.5832,0.607,0.5584,0.4739,0.5], int_ltv:[0.1248,0.4591,0.4507,0.3701,0.3192,0.3464] },
+    IOS: { ecpm:[64.837,43.692,31.329,27.521,26.284,25.313], rv_ecpm:[117.308,63.731,44.768,36.476,33.968,32.548], int_ecpm:[49.311,32.071,22.834,20.361,19.762,18.964], freq:[1.66,4.14,4.62,4.44,4.17,3.96], ltv:[0.273,1.0658,1.0152,0.8272,0.6964,0.7183], rv_ltv:[0.1081,0.5134,0.4968,0.4203,0.3512,0.3654], int_ltv:[0.1622,0.524,0.4865,0.3774,0.3193,0.3253] }
+  },
+  P10: {
+    ANDROID: { ecpm:[64.488,34.975,27.988,26.372,26.464,26.839], rv_ecpm:[116.307,55.412,45.138,41.887,41.916,42.052], int_ecpm:[45.627,26.002,19.12,17.773,17.358,17.374], freq:[3.02,8.72,8.65,8.31,7.96,7.60], ltv:[0.4469,2.3467,2.4035,2.2433,2.0649,2.2257], rv_ltv:[0.2151,1.1344,1.3211,1.2706,1.2127,1.3375], int_ltv:[0.2318,1.2124,1.0823,0.9726,0.8522,0.8882] },
+    IOS: { ecpm:[74.755,41.663,32.181,30.07,31.125,32.436], rv_ecpm:[144.827,68.475,53.848,49.074,50.368,51.987], int_ecpm:[56.234,32.078,22.596,20.989,21.41,22.178], freq:[3.50,8.09,7.53,6.88,6.51,6.10], ltv:[0.6854,2.6508,2.3875,1.9874,1.7678,1.8777], rv_ltv:[0.2776,1.1474,1.2253,1.0488,0.9597,1.0356], int_ltv:[0.4078,1.5034,1.1622,0.9386,0.808,0.842] }
+  },
+  UNO2: {
+    ANDROID: { ecpm:[30.173,26.893,24.08,24.374,25.128,24.592], rv_ecpm:[41.512,34.099,30.482,31.127,31.613,30.82], int_ecpm:[21.444,20.085,17.552,17.213,17.807,17.328], freq:[5.89,6.62,6.67,6.64,6.88,7.21], ltv:[0.4022,0.7541,0.7215,0.6836,0.6936,0.764], rv_ltv:[0.2407,0.4645,0.4611,0.4493,0.4627,0.5155], int_ltv:[0.1615,0.2896,0.2604,0.2343,0.2309,0.2485] },
+    IOS: { ecpm:[74.454,58.078,48.463,49.239,49.696,51.449], rv_ecpm:[95.546,69.89,58.279,59.984,59.466,63.104], int_ecpm:[55.802,46.135,38.232,37.839,39.035,39.191], freq:[6.44,6.31,6.05,5.73,5.70,5.72], ltv:[1.3318,1.9518,1.6141,1.4087,1.3263,1.4522], rv_ltv:[0.8021,1.1808,0.9907,0.8834,0.8281,0.9131], int_ltv:[0.5297,0.7709,0.6234,0.5253,0.4982,0.5392] }
+  }
+};
+
+function makeChart(id, title, metric, platform) {
+  const c = echarts.init(document.getElementById(id));
+  c.setOption({
+    title: { text: title, left: 'center', textStyle: { fontSize: 13 } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+    grid: { top: 40, bottom: 50, left: 50, right: 20 },
+    xAxis: { type: 'category', data: lt },
+    yAxis: { type: 'value' },
+    series: Object.keys(D).map(game => ({
+      name: game, type: 'line', smooth: true,
+      data: D[game][platform][metric],
+      itemStyle: { color: colors[game] }
+    }))
+  });
+  return c;
+}
+
+function makeCompare(id, title, game, platform, metrics, names) {
+  const c = echarts.init(document.getElementById(id));
+  c.setOption({
+    title: { text: title, left: 'center', textStyle: { fontSize: 13 } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0 },
+    grid: { top: 40, bottom: 50, left: 50, right: 20 },
+    xAxis: { type: 'category', data: lt },
+    yAxis: { type: 'value' },
+    series: metrics.map((m, i) => ({
+      name: names[i], type: 'line', smooth: true,
+      data: D[game][platform][m]
+    }))
+  });
+  return c;
+}
+
+const charts = [];
+// eCPM
+charts.push(makeChart('ecpm_total_android', 'Android - 总eCPM', 'ecpm', 'ANDROID'));
+charts.push(makeChart('ecpm_total_ios', 'iOS - 总eCPM', 'ecpm', 'IOS'));
+charts.push(makeChart('ecpm_rv_android', 'Android - RV eCPM', 'rv_ecpm', 'ANDROID'));
+charts.push(makeChart('ecpm_rv_ios', 'iOS - RV eCPM', 'rv_ecpm', 'IOS'));
+charts.push(makeChart('ecpm_int_android', 'Android - INT eCPM', 'int_ecpm', 'ANDROID'));
+charts.push(makeChart('ecpm_int_ios', 'iOS - INT eCPM', 'int_ecpm', 'IOS'));
+// Freq
+charts.push(makeChart('freq_android', 'Android - Freq/DAU', 'freq', 'ANDROID'));
+charts.push(makeChart('freq_ios', 'iOS - Freq/DAU', 'freq', 'IOS'));
+// LTV
+charts.push(makeChart('ltv_total_android', 'Android - 总IAA LTV', 'ltv', 'ANDROID'));
+charts.push(makeChart('ltv_total_ios', 'iOS - 总IAA LTV', 'ltv', 'IOS'));
+charts.push(makeChart('ltv_rv_android', 'Android - RV LTV', 'rv_ltv', 'ANDROID'));
+charts.push(makeChart('ltv_rv_ios', 'iOS - RV LTV', 'rv_ltv', 'IOS'));
+charts.push(makeChart('ltv_int_android', 'Android - INT LTV', 'int_ltv', 'ANDROID'));
+charts.push(makeChart('ltv_int_ios', 'iOS - INT LTV', 'int_ltv', 'IOS'));
+// P10 RV vs INT
+charts.push(makeCompare('p10_rv_int_android', 'P10 Android - RV vs INT eCPM', 'P10', 'ANDROID', ['rv_ecpm','int_ecpm'], ['RV eCPM','INT eCPM']));
+charts.push(makeCompare('p10_rv_int_ios', 'P10 iOS - RV vs INT eCPM', 'P10', 'IOS', ['rv_ecpm','int_ecpm'], ['RV eCPM','INT eCPM']));
+
+window.addEventListener('resize', () => charts.forEach(c => c.resize()));
+</script>
+</body>
+</html>
