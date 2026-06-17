@@ -12,6 +12,7 @@
         h2 { color: #333; border-left: 4px solid #4CAF50; padding-left: 12px; margin-top: 40px; font-size: 18px; }
         h3 { color: #555; margin-top: 25px; font-size: 15px; }
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+        .chart-grid-overview { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
         .chart-box { height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 12px; }
         .summary { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin: 20px 0; }
         .summary li { margin: 6px 0; line-height: 1.5; font-size: 14px; }
@@ -33,6 +34,17 @@
             <li>iOS eCPM 约为 Android 2~3倍，仍有提频空间</li>
             <li>LTV 在 LT60→LT120 出现拐点，长线广告效率恶化</li>
         </ul>
+    </div>
+
+    <h2>整体概览（合并双端，分产品对比）</h2>
+    <div class="chart-grid-overview">
+        <div class="chart-box" id="overall_ecpm"></div>
+        <div class="chart-box" id="overall_rv_ecpm"></div>
+        <div class="chart-box" id="overall_int_ecpm"></div>
+        <div class="chart-box" id="overall_freq"></div>
+        <div class="chart-box" id="overall_ltv"></div>
+        <div class="chart-box" id="overall_rv_ltv"></div>
+        <div class="chart-box" id="overall_int_ltv"></div>
     </div>
 
     <h2>1. 总eCPM 趋势（分产品 × 分双端）</h2>
@@ -143,6 +155,45 @@ function makeCompare(id, title, game, platform, metrics, names) {
 }
 
 const charts = [];
+
+// Compute overall (combined platform) data - simple average of Android + iOS
+const Overall = {};
+Object.keys(D).forEach(game => {
+  Overall[game] = {};
+  const metrics = Object.keys(D[game]['ANDROID']);
+  metrics.forEach(m => {
+    Overall[game][m] = D[game]['ANDROID'][m].map((v, i) => 
+      Math.round(((v + D[game]['IOS'][m][i]) / 2) * 10000) / 10000
+    );
+  });
+});
+
+function makeOverallChart(id, title, metric) {
+  const c = echarts.init(document.getElementById(id));
+  c.setOption({
+    title: { text: title, left: 'center', textStyle: { fontSize: 13 } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+    grid: { top: 40, bottom: 50, left: 50, right: 20 },
+    xAxis: { type: 'category', data: lt },
+    yAxis: { type: 'value' },
+    series: Object.keys(Overall).map(game => ({
+      name: game, type: 'line', smooth: true,
+      data: Overall[game][metric],
+      itemStyle: { color: colors[game] }
+    }))
+  });
+  return c;
+}
+
+// Overall charts
+charts.push(makeOverallChart('overall_ecpm', '整体 - 总eCPM（分产品）', 'ecpm'));
+charts.push(makeOverallChart('overall_rv_ecpm', '整体 - RV eCPM（分产品）', 'rv_ecpm'));
+charts.push(makeOverallChart('overall_int_ecpm', '整体 - INT eCPM（分产品）', 'int_ecpm'));
+charts.push(makeOverallChart('overall_freq', '整体 - Freq/DAU（分产品）', 'freq'));
+charts.push(makeOverallChart('overall_ltv', '整体 - 总IAA LTV（分产品）', 'ltv'));
+charts.push(makeOverallChart('overall_rv_ltv', '整体 - RV LTV（分产品）', 'rv_ltv'));
+charts.push(makeOverallChart('overall_int_ltv', '整体 - INT LTV（分产品）', 'int_ltv'));
 // eCPM
 charts.push(makeChart('ecpm_total_android', 'Android - 总eCPM', 'ecpm', 'ANDROID'));
 charts.push(makeChart('ecpm_total_ios', 'iOS - 总eCPM', 'ecpm', 'IOS'));
