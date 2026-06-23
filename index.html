@@ -45,6 +45,7 @@
 
         .chart-full { height: 380px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px; margin: 12px 0; }
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+        .chart-grid-overview { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
         .chart-box { height: 340px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px; }
 
         .summary {
@@ -65,6 +66,7 @@
 <nav class="toc" id="toc">
     <h3>目录导航</h3>
     <a href="#summary" class="level-1">核心结论</a>
+    <a href="#overview" class="level-1">整体概览</a>
     <a href="#module1" class="level-1">一、eCPM 篇</a>
     <a href="#s1_1" class="level-2">1.1 总eCPM</a>
     <a href="#s1_2" class="level-2">1.2 RV eCPM</a>
@@ -95,6 +97,20 @@
             <li>UNO2 的 RV 和 INT 频次接近 1:1，广告结构最均衡</li>
             <li>UNO RV频次极低（0.5~2.8次/天），INT是主要展示形式（1.8~4.2次/天）</li>
         </ul>
+    </div>
+
+    <!-- 整体概览 -->
+    <div id="overview" class="section-title" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">整体概览（合并双端，分产品对比）</div>
+    <div class="chart-grid-overview">
+        <div class="chart-box" id="ov_ecpm"></div>
+        <div class="chart-box" id="ov_rv_ecpm"></div>
+        <div class="chart-box" id="ov_int_ecpm"></div>
+        <div class="chart-box" id="ov_freq"></div>
+        <div class="chart-box" id="ov_rv_freq"></div>
+        <div class="chart-box" id="ov_int_freq"></div>
+        <div class="chart-box" id="ov_ltv"></div>
+        <div class="chart-box" id="ov_rv_ltv"></div>
+        <div class="chart-box" id="ov_int_ltv"></div>
     </div>
 
     <!-- Module 1: eCPM 篇 -->
@@ -260,6 +276,17 @@ function makeOverallChart(id, title, metric) {
 
 // Initialize all charts
 const charts = [];
+
+// Overview section (3x3 grid)
+charts.push(makeOverallChart('ov_ecpm', '总eCPM', 'ecpm'));
+charts.push(makeOverallChart('ov_rv_ecpm', 'RV eCPM', 'rv_ecpm'));
+charts.push(makeOverallChart('ov_int_ecpm', 'INT eCPM', 'int_ecpm'));
+charts.push(makeOverallChart('ov_freq', '总Freq/DAU', 'freq'));
+charts.push(makeOverallChart('ov_rv_freq', 'RV Freq/DAU', 'rv_freq'));
+charts.push(makeOverallChart('ov_int_freq', 'INT Freq/DAU', 'int_freq'));
+charts.push(makeOverallChart('ov_ltv', '总IAA LTV', 'ltv'));
+charts.push(makeOverallChart('ov_rv_ltv', 'RV LTV', 'rv_ltv'));
+charts.push(makeOverallChart('ov_int_ltv', 'INT LTV', 'int_ltv'));
 
 // Module 1: eCPM
 charts.push(makeOverallChart('overall_ecpm', '整体 - 总eCPM（四款产品对比）', 'ecpm'));
